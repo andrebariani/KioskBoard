@@ -188,6 +188,14 @@
   };
   // KioskBoard: Check the event target by element: end
 
+  var accents = ['\u0301', '\u0302', '\u0303'];
+  var vowels = ['A', 'E', 'I', 'O', 'U'];
+
+  var initHoldTimeout;
+  var holdInterval;
+  var isMouseDown = false;
+  var pressedKeyElm;
+
   // KioskBoard: begin
   var KioskBoard = {
     // Initialize
@@ -263,9 +271,9 @@
           var theInput = this;
           var theInputSelIndex = 0;
           var theInputValArray = [];
-          var keyboadTypeArray = ['all', 'keyboard', 'numpad'];
+          var keyboardTypeArray = ['all', 'keyboard', 'numpad'];
           var theInputKeyboardType = (theInput.dataset.kioskboardType || '').toLocaleLowerCase('en');
-          var keyboadType = keyboadTypeArray.indexOf(theInputKeyboardType) > -1 ? theInputKeyboardType : 'all';
+          var keyboardType = keyboardTypeArray.indexOf(theInputKeyboardType) > -1 ? theInputKeyboardType : 'all';
           var allowedSpecialCharacters = (theInput.dataset.kioskboardSpecialcharacters || '').toLocaleLowerCase('en') === 'true';
           var keyboardLanguage = typeof opt.language === 'string' && opt.language.length > 0 ? opt.language.toLocaleLowerCase('en') : 'en';
           // input element variables: end
@@ -288,6 +296,7 @@
           var keysRowElements = '';
 
           // all keys styles
+          // eslint-disable-next-line no-unused-vars
           var fontFamily = typeof opt.keysFontFamily === 'string' && opt.keysFontFamily.length > 0 ? opt.keysFontFamily : 'sans-serif';
           var fontSize = typeof opt.keysFontSize === 'string' && opt.keysFontSize.length > 0 ? opt.keysFontSize : '22px';
           var fontWeight = typeof opt.keysFontWeight === 'string' && opt.keysFontWeight.length > 0 ? opt.keysFontWeight : 'normal';
@@ -300,9 +309,16 @@
           var spaceKeyValue = keysAllowSpacebar ? ' ' : '';
           var keysSpacebarText = typeof opt.keysSpacebarText === 'string' && opt.keysSpacebarText.length > 0 ? opt.keysSpacebarText : 'Space';
 
-          var spaceKey = '<span style="font-family:' + fontFamily + ',sans-serif;font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key kioskboard-key-space ' + (keysAllowSpacebar ? 'spacebar-allowed' : 'spacebar-denied') + '" data-value="' + spaceKeyValue + '">' + keysSpacebarText + '</span>';
-          var capsLockKey = '<span style="font-family:' + fontFamily + ',sans-serif;font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key-capslock ' + (isCapsLockActive ? 'capslock-active' : '') + '">' + kioskBoardIconCapslock(keysIconWidth, keysIconColor) + '</span>';
-          var backspaceKey = '<span style="font-family:' + fontFamily + ',sans-serif;font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key-backspace">' + kioskBoardIconBackspace(keysIconWidth, keysIconColor) + '</span>';
+          var spaceKey = '<span style="font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key kioskboard-key-space ' + (keysAllowSpacebar ? 'spacebar-allowed' : 'spacebar-denied') + '" data-value="' + spaceKeyValue + '">' + keysSpacebarText + '</span>';
+          var capsLockKey = '<span style="font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key-capslock ' + (isCapsLockActive ? 'capslock-active' : '') + '">' + kioskBoardIconCapslock(keysIconWidth, keysIconColor) + '</span>';
+          
+          if(keyboardType === 'numpad') {
+            var backspaceKey = '<span style="font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key-backspace">' + kioskBoardIconBackspace(keysIconWidth, keysIconColor) + '</span>';
+          } else {
+            var backspaceKey = '<span style="font-weight:' + fontWeight + ';font-size:' + fontSize + ';max-width:19.95%;" class="kioskboard-key-backspace">' + kioskBoardIconBackspace(keysIconWidth, keysIconColor) + '</span>';
+          }
+          var closeKey = '<span style="font-weight:' + fontWeight + ';font-size:' + fontSize + ';max-width: 19.75%;background: #7e96da;color: #fafafa;" class="kioskboard-key-close">Fechar</span>';
+
           // static keys: end
 
           // keyboard "specialcharacter" setting is "true": begin
@@ -312,7 +328,7 @@
             var size = parseInt(keysIconWidth) || 25;
             var specialKeyWidth = (size * 2) + 'px';
             var specialKeyHeight = size + 'px';
-            specialCharacterKey = '<span style="font-family:' + fontFamily + ',sans-serif;font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key-specialcharacter">' + kioskBoardIconSpecialCharacters(specialKeyWidth, specialKeyHeight, keysIconColor) + '</span>';
+            specialCharacterKey = '<span style="font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key-specialcharacter">' + kioskBoardIconSpecialCharacters(specialKeyWidth, specialKeyHeight, keysIconColor) + '</span>';
             /* eslint-disable */
             var specialKeysObject = {
               "0": "!",
@@ -370,7 +386,7 @@
               if (Object.prototype.hasOwnProperty.call(specialKeysObject, key2)) {
                 var index2 = key2;
                 var value2 = specialKeysObject[key2];
-                var eachKey2 = '<span style="font-family:' + fontFamily + ',sans-serif;font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key" data-index="' + index2.toString() + '" data-value="' + value2.toString() + '">' + value2.toString() + '</span>';
+                var eachKey2 = '<span style="font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key" data-index="' + index2.toString() + '" data-value="' + value2.toString() + '">' + value2.toString() + '</span>';
                 specialCharactersContent += eachKey2;
               }
             }
@@ -378,7 +394,7 @@
           // keyboard "specialcharacter" setting is "true": begin
 
           // keyboard type is "numpad": begin
-          if (keyboadType === 'numpad') {
+          if (keyboardType === 'numpad') {
             /* eslint-disable */
             var numpadKeysObject = {
               "0": "7",
@@ -399,7 +415,7 @@
               if (Object.prototype.hasOwnProperty.call(numpadKeysObject, key3)) {
                 var index3 = key3;
                 var value3 = numpadKeysObject[key3];
-                var eachKey3 = '<span style="font-family:' + fontFamily + ',sans-serif;font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key kioskboard-key-' + value3.toString() + '" data-index="' + index3.toString() + '" data-value="' + value3.toString() + '">' + value3.toString() + '</span>';
+                var eachKey3 = '<span style="font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key kioskboard-key-' + value3.toString() + '" data-index="' + index3.toString() + '" data-value="' + value3.toString() + '">' + value3.toString() + '</span>';
                 numpadKeysContent += eachKey3;
               }
             }
@@ -408,9 +424,9 @@
           // keyboard type is "numpad": end
 
           // keyboard type is "all" or "keyboard": begin
-          if (keyboadType === 'keyboard' || keyboadType === 'all') {
+          if (keyboardType === 'keyboard' || keyboardType === 'all') {
             // only keyboard type is "all": begin
-            if (keyboadType === 'all') {
+            if (keyboardType === 'all') {
               /* eslint-disable */
               var numberKeysObject = {
                 "0": "1",
@@ -431,11 +447,11 @@
                 if (Object.prototype.hasOwnProperty.call(numberKeysObject, key4)) {
                   var index4 = key4;
                   var value4 = numberKeysObject[key4];
-                  var eachKey4 = '<span style="font-family:' + fontFamily + ',sans-serif;font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key kioskboard-key-' + value4.toString() + '" data-index="' + index4.toString() + '" data-value="' + value4.toString() + '">' + value4.toString() + '</span>';
+                  var eachKey4 = '<span style="font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key kioskboard-key-' + value4.toString() + '" data-index="' + index4.toString() + '" data-value="' + value4.toString() + '">' + value4.toString() + '</span>';
                   numberKeysContent += eachKey4;
                 }
               }
-              keysRowElements += '<div class="kioskboard-row kioskboard-row-top">' + numberKeysContent + '</div>';
+              keysRowElements += '<div class="kioskboard-row kioskboard-row-top">' + numberKeysContent + backspaceKey + '</div>';
             }
             // only keyboard type is "all": end
 
@@ -447,7 +463,19 @@
                 if (Object.prototype.hasOwnProperty.call(eachObj, key5)) {
                   var index5 = key5;
                   var value5 = eachObj[key5];
-                  var eachKey5 = '<span style="font-family:' + fontFamily + ',sans-serif;font-weight:' + fontWeight + ';font-size:' + fontSize + ';" class="kioskboard-key kioskboard-key-' + value5.toString().toLocaleLowerCase(keyboardLanguage) + '" data-index="' + index5.toString() + '" data-value="' + value5.toString() + '">' + value5.toString() + '</span>';
+                  let viewValue5 = value5;
+                  if (accents.includes(value5)) {
+                    if (value5 === '\u0301') viewValue5 = '\u00B4';
+                    if (value5 === '\u0302') viewValue5 = '\u005E';
+                    if (value5 === '\u0303') viewValue5 = '\u007E';
+                  }
+
+                  let styleCss = '<span style="font-weight:' + fontWeight + ';font-size:' + fontSize;
+
+                  if (value5 === '')
+                    styleCss += ';background: #0000;border-color: #0000; border-bottom-color: #0000;color: #0000;box-shadow: 0 2px 0 0.05px #0000;pointer-events: none';
+                  var eachKey5 = styleCss + ';" class="kioskboard-key kioskboard-key-' + value5.toString().toLocaleLowerCase(keyboardLanguage) + '" data-index="' + index5.toString() + '" data-value="' + value5.toString() + '">' + viewValue5.toString() + '</span>';
+
                   rowKeysContent += eachKey5;
                 }
               }
@@ -456,7 +484,7 @@
             // dynamic keys group: end
 
             // bottom keys group: begin
-            keysRowElements += '<div class="kioskboard-row kioskboard-row-bottom ' + (allowedSpecialCharacters ? 'kioskboard-with-specialcharacter' : '') + '">' + capsLockKey + specialCharacterKey + spaceKey + backspaceKey + '</div>';
+            keysRowElements += '<div class="kioskboard-row kioskboard-row-bottom ' + (allowedSpecialCharacters ? 'kioskboard-with-specialcharacter' : '') + '">' + capsLockKey + specialCharacterKey + spaceKey + closeKey + '</div>';
             // bottom keys group: end
 
             // add if special character keys allowed: begin
@@ -501,6 +529,10 @@
           kioskBoardVirtualKeyboard.classList.add('kioskboard-theme-' + theTheme);
           kioskBoardVirtualKeyboard.classList.add(cssAnimationsClass);
           kioskBoardVirtualKeyboard.classList.add(cssAnimationsStyle);
+
+          if (keyboardType === 'numpad')
+            kioskBoardVirtualKeyboard.style.maxWidth = '500px';
+
           kioskBoardVirtualKeyboard.classList.add((isCapsLockActive ? 'kioskboard-touppercase' : 'kioskboard-tolowercase'));
           kioskBoardVirtualKeyboard.lang = keyboardLanguage;
           kioskBoardVirtualKeyboard.style.webkitLocale = '"' + keyboardLanguage + '"';
@@ -542,6 +574,15 @@
           }, false);
           // input element change listener: end
 
+          var canInsertAccent = function (newChar, selIndex) {
+            if (accents.includes(newChar)) {
+              if (selIndex === 0 || !vowels.includes(input.value.charAt(theInputSelIndex - 1))) {
+                return false;
+              }
+            }
+            return true;
+          };
+
           // keys click listeners: begin
           var keysClickListeners = function (input) {
             // each key click listener: begin
@@ -549,35 +590,112 @@
             if (eachKeyElm && eachKeyElm.length > 0) {
               for (var i = 0; i < eachKeyElm.length; i++) {
                 var keyElm = eachKeyElm[i];
-                keyElm.addEventListener('click', function (e) {
-                  e.preventDefault();
 
-                  // input trigger change for selectionStart
-                  input.dispatchEvent(changeEvent);
+                var pressEventKey = function (e, dataset) {
 
-                  // input trigger focus
-                  input.focus();
+                  isMouseDown = true;
 
-                  // key's value
-                  var keyValue = this.dataset.value || '';
+                  console.log(e)
 
-                  // check capslock
-                  if (isCapsLockActive) {
-                    keyValue = keyValue.toLocaleUpperCase(keyboardLanguage);
-                  } else {
-                    keyValue = keyValue.toLocaleLowerCase(keyboardLanguage);
+                  pressedKeyElm = e.target;
+                  pressedKeyElm.classList.add("-pressed");
+
+                  var insertChar = function (dataset) {
+                    // start patch for caret position, add value at current carret position
+                    var startPos = input.selectionStart;
+                    var theInputSelIndex = startPos;
+
+                    input.setSelectionRange(startPos, startPos);
+                    // end patch for caret position
+
+                    e.preventDefault();
+
+                    // input trigger change for selectionStart
+                    input.dispatchEvent(changeEvent);
+
+                    // input trigger focus
+                    input.focus();
+
+                    // key's value
+                    var keyValue = dataset.value || '';
+
+                    // Checks accent insertion
+                    if (canInsertAccent(keyValue, theInputSelIndex)) {
+
+                      // check capslock
+                      if (isCapsLockActive) {
+                        keyValue = keyValue.toLocaleUpperCase(keyboardLanguage);
+                      } else {
+                        keyValue = keyValue.toLocaleLowerCase(keyboardLanguage);
+                      }
+
+                      // add value by index
+                      theInputValArray.splice(theInputSelIndex, 0, keyValue);
+
+                      // update input value
+                      input.value = theInputValArray.join('');
+
+                      // start patch for caret position, move carret position after type
+                      input.setSelectionRange(startPos + 1, startPos + 1);
+                      // end patch for caret position
+
+                    }
                   }
 
-                  // add value by index
-                  theInputValArray.splice(theInputSelIndex, 0, keyValue);
+                  insertChar(dataset);
 
-                  // update input value
-                  input.value = theInputValArray.join('');
+                  if (initHoldTimeout) clearTimeout(initHoldTimeout);
 
-                }, false);
+                  // Detect mouse click hold
+                  initHoldTimeout = window.setTimeout(() => {
+
+                    if (holdInterval) clearInterval(holdInterval);
+
+                    holdInterval = window.setInterval(() => {
+                      if (isMouseDown) {
+                        insertChar(dataset);
+                      } else {
+                        clearInterval(holdInterval);
+                      }
+                    }, 100);
+
+                    clearTimeout(initHoldTimeout);
+
+                  }, 500);
+                }
+
+                keyElm.addEventListener('mousedown', function (e) { pressEventKey(e, this.dataset); }, false);
+
+                keyElm.addEventListener('touchstart', function (e) { pressEventKey(e, this.dataset); }, false);
+
               }
             }
             // each key click listener: end
+
+            // Interrupt key hold for any mouseup event
+            window.document.addEventListener("mouseup", function (_e) {
+              if (initHoldTimeout) clearTimeout(initHoldTimeout);
+              if (holdInterval) clearInterval(initHoldTimeout);
+
+              isMouseDown = false;
+
+              if (pressedKeyElm) {
+                pressedKeyElm.classList.remove("-pressed")
+                pressedKeyElm = undefined;
+              }
+            }, false);
+
+            window.document.addEventListener("touchend", function (_e) {
+              if (initHoldTimeout) clearTimeout(initHoldTimeout);
+              if (holdInterval) clearInterval(initHoldTimeout);
+
+              isMouseDown = false;
+
+              if (pressedKeyElm) {
+                pressedKeyElm.classList.remove("-pressed")
+                pressedKeyElm = undefined;
+              }
+            }, false);
 
             // capslock key click listener: begin
             var capsLockKeyElm = window.document.getElementById(kioskBoardVirtualKeyboard.id).getElementsByClassName('kioskboard-key-capslock')[0];
@@ -605,24 +723,83 @@
             // backspace key click listener: begin
             var backspaceKeyElm = window.document.getElementById(kioskBoardVirtualKeyboard.id).getElementsByClassName('kioskboard-key-backspace')[0];
             if (backspaceKeyElm) {
-              backspaceKeyElm.addEventListener('click', function (e) {
-                e.preventDefault();
+              var isMouseDown = false;
+              var initHoldTimeout;
+              var holdInterval;
 
-                // trigger for selectionStart
-                input.dispatchEvent(changeEvent);
+              var pressEventBackspace = function (e) {
 
-                // input trigger focus
-                input.focus();
+                isMouseDown = true;
 
-                // remove value by index
-                theInputValArray.splice((theInputSelIndex - 1), 1);
+                pressedKeyElm = e.target;
+                pressedKeyElm.classList.add("-pressed");
 
-                // update input value
-                input.value = theInputValArray.join('');
+                var deleteChar = function () {
 
-              }, false);
+                  // start patch for caret position for backspace
+                  var startPos = input.selectionStart;
+                  input.setSelectionRange(startPos, startPos);
+                  // end patch for caret position
+
+                  e.preventDefault();
+
+                  // trigger for selectionStart
+                  input.dispatchEvent(changeEvent);
+
+                  // input trigger focus
+                  input.focus();
+
+                  // remove value by index
+                  theInputValArray.splice((theInputSelIndex - 1), 1);
+
+                  // update input value
+                  input.value = theInputValArray.join('');
+
+                  // start patch for caret position for backspace
+                  input.setSelectionRange(startPos - 1, startPos - 1);
+                  // end patch for caret position for backspace
+
+                }
+
+                deleteChar();
+
+                if (initHoldTimeout) clearTimeout(initHoldTimeout);
+
+                // Detect mouse click hold
+                initHoldTimeout = window.setTimeout(() => {
+
+                  if (holdInterval) clearInterval(holdInterval);
+
+                  holdInterval = window.setInterval(() => {
+                    if (isMouseDown) {
+                      deleteChar();
+                    } else {
+                      clearInterval(holdInterval);
+                    }
+                  }, 100);
+
+                  clearTimeout(initHoldTimeout);
+
+                }, 500);
+              }
+
+              backspaceKeyElm.addEventListener('mousedown', function (e) { pressEventBackspace(e); }, false);
+
+              backspaceKeyElm.addEventListener('touchstart', function (e) { pressEventBackspace(e); }, false);
             }
             // backspace key click listener: end
+
+            // close key click listener: begin
+            var closeKeyElm = window.document.getElementById(kioskBoardVirtualKeyboard.id).getElementsByClassName('kioskboard-key-close')[0];
+            if (closeKeyElm) {
+              // eslint-disable-next-line no-unused-vars
+              closeKeyElm.addEventListener('click', function (_e) {
+                keyboardElement.parentNode.removeChild(keyboardElement); // remove keyboard
+                window.document.body.classList.remove('kioskboard-body-padding'); // remove body padding class
+                window.document.removeEventListener('click', docClickListener); // remove document click listener
+              }, false);
+            }
+            // close key click listener: end
 
             // specialcharacter key click listener: begin
             var specialCharacterKeyElm = window.document.getElementById(kioskBoardVirtualKeyboard.id).getElementsByClassName('kioskboard-key-specialcharacter')[0];
@@ -646,13 +823,10 @@
             if (specialCharCloseElm && specialCharacterKeyElm && specialCharactersRowElm) {
               specialCharCloseElm.addEventListener('click', function (e) {
                 e.preventDefault();
-                input.focus(); // focus the input
                 specialCharacterKeyElm.classList.remove('specialcharacter-active');
                 specialCharactersRowElm.classList.remove('kioskboard-specialcharacter-show');
               }, false);
             }
-            // specialcharacter key click listener: end
-
           };
           // keys click listeners: end
 
@@ -726,6 +900,7 @@
                     keyboardElement.parentNode.removeChild(keyboardElement); // remove keyboard
                     window.document.body.classList.remove('kioskboard-body-padding'); // remove body padding class
                     window.document.removeEventListener('click', docClickListener); // remove document click listener
+                    theInput.blur()
                   }
                   clearTimeout(removeTimeout);
                 }, cssAnimationsDuration);
